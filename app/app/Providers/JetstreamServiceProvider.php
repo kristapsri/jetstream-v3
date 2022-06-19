@@ -9,6 +9,8 @@ use App\Actions\Jetstream\DeleteUser;
 use App\Actions\Jetstream\InviteTeamMember;
 use App\Actions\Jetstream\RemoveTeamMember;
 use App\Actions\Jetstream\UpdateTeamName;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Jetstream\Jetstream;
 
@@ -56,6 +58,7 @@ class JetstreamServiceProvider extends ServiceProvider
             'read',
             'update',
             'delete',
+            'view_test_section'
         ])->description('Administrator users can perform any action.');
 
         Jetstream::role('editor', 'Editor', [
@@ -63,5 +66,9 @@ class JetstreamServiceProvider extends ServiceProvider
             'create',
             'update',
         ])->description('Editor users have the ability to read, create, and update.');
+
+        Gate::define('view_test_section', function (User $user) {
+            return $user->hasTeamPermission($user->currentTeam, 'view_test_section');
+        });
     }
 }

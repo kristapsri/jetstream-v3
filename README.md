@@ -1,7 +1,8 @@
 ##  Laravel Jetstream v3
 
-##### Laravel/Redis/Tailwind/Inertia stack
-
+##### Laravel/Redis/Tailwind/Inertia stack with basic user authentication, roles with permissions within user teams
+Role and its permission management within app/app/Providers/JetstreamServiceProvider.php file
+Permission check in controller with Gate::authorize($permission)
 
 ### Overview
 

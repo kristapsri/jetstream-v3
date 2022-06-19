@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
+use Laravel\Jetstream\Jetstream;
+use Laravel\Jetstream\Role;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -58,4 +60,51 @@ class User extends Authenticatable
     protected $appends = [
         'profile_photo_url',
     ];
+
+    public function teamRole($team): ?Role
+    {
+        if (!$this->belongsToTeam($team)) {
+            return null;
+        }
+
+        if ($this->ownsTeam($team)) {
+            return Jetstream::findRole('admin');
+        }
+
+        $role = $team->users
+            ->where('id', $this->id)
+            ->first()
+            ->role;
+
+        return $role ? Jetstream::findRole($role) : null;
+    }
+
+    public function teamPermissions(Team $team): array
+    {
+        if (!$this->belongsToTeam($team)) {
+            return [];
+        }
+
+        return (array) optional($this->teamRole($team))->permissions;
+    }
+
+    public function hasTeamPermission(Team $team, string $permission): bool
+    {
+        if (!$this->belongsToTeam($team)) {
+            return false;
+        }
+
+        if (in_array(HasApiTokens::class, class_uses_recursive($this)) &&
+            !$this->tokenCan($permission) &&
+            $this->currentAccessToken() !== null) {
+            return false;
+        }
+
+        $permissions = $this->teamPermissions($team);
+
+        return in_array($permission, $permissions) ||
+            in_array('*', $permissions) ||
+            (Str::endsWith($permission, ':create') && in_array('*:create', $permissions)) ||
+            (Str::endsWith($permission, ':update') && in_array('*:update', $permissions));
+    }
 }
