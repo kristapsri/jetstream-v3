@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+    app:
+        build:
+            context: ./docker/local/php
+            dockerfile: Dockerfile
+        container_name: app
+        image: kristapsri/php
+        tty: true
+        working_dir: /var/www/app
+        restart: unless-stopped
+        volumes:
+            - ./:/var/www/
+        environment:
+            SERVICE_NAME: app
+            SERVICE_TAGS: dev
+        networks:
+            - app-network
+    webserver:
+        container_name: webserver
+        image: nginx:alpine
+        tty: true
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./docker/local/nginx/conf.d/:/etc/nginx/conf.d/
+            - ./:/var/www
+        networks:
+            - app-network
+    db:
+        container_name: mysql
+        image: mysql:8.0
+        ports:
+            - "3306:3306"
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: app
+            MYSQL_ROOT_PASSWORD: secret
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - dbdata:/var/lib/mysql/
+        networks:
+            - app-network
+    redis:
+        container_name: redis
+        image: redis:7.0
+        environment:
+            - REDIS_APPENDONLY=yes
+            - REDIS_APPENDFSYNC=always
+        volumes:
+            - ./redis_data:/data
+        networks:
+            - app-network
+
+# Networks
+networks:
+    app-network:
+        driver: bridge
+
+# Volumes
+volumes:
+    dbdata:
+        driver: local
