@@ -11,8 +11,8 @@
 
 - `nginx`,
 - `php@^8.0`,
-- `mysql@^5.7`,
-- `redis@^3.2`
+- `mysql@^8.0`,
+- `redis@^7.0`
 
 0) Create and configure mysql user and database which later should be provided in .env file
 
